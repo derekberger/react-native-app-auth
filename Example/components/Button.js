@@ -16,9 +16,11 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   buttonBox: {
-    height: 50,
+    borderWidth: 1,
+    height: 40,
     flex: 1,
-    margin: 5,
+    marginTop: 5,
+    // marginLeft: 5,
     alignItems: 'center',
     justifyContent: 'center'
   }

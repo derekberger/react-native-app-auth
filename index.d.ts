@@ -1,4 +1,5 @@
 export interface ServiceConfiguration {
+  userInfoEndpoint?: string
   authorizationEndpoint: string;
   tokenEndpoint: string;
   revocationEndpoint?: string;
