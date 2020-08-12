@@ -10,9 +10,15 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.30",
+    "@fortawesome/free-solid-svg-icons": "^5.14.0",
+    "@fortawesome/react-fontawesome": "^0.1.11",
+    "jwt-decode": "^2.2.0",
     "react": "16.11.0",
+    "react-icons": "^3.10.0",
     "react-native": "0.62.2",
-    "react-native-app-auth": "FormidableLabs/react-native-app-auth#master"
+    "react-native-app-auth": "github:FormidableLabs/react-native-app-auth#main",
+    "react-native-pure-jwt": "^2.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.6.2",

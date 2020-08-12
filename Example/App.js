@@ -1,7 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { UIManager, LayoutAnimation, Alert } from 'react-native';
+import React, { useState, useCallback, useMemo, Component } from 'react';
+import { UIManager, LayoutAnimation, Alert, StyleSheet, Text, View, TextInput, ScrollView } from 'react-native';
 import { authorize, refresh, revoke, prefetchConfiguration } from 'react-native-app-auth';
 import { Page, Button, ButtonContainer, Form, FormLabel, FormValue, Heading } from './components';
+
+const jwt_decode = require('jwt-decode');
+
 
 UIManager.setLayoutAnimationEnabledExperimental &&
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -9,51 +12,62 @@ UIManager.setLayoutAnimationEnabledExperimental &&
 type State = {
   hasLoggedInOnce: boolean,
   provider: ?string,
+  idToken: ?string,
   accessToken: ?string,
   accessTokenExpirationDate: ?string,
-  refreshToken: ?string
+  refreshToken: ?string,
+  userName: ?string
 };
 
-const configs = {
+var configs = {
   identityserver: {
-    issuer: 'https://demo.identityserver.io',
-    clientId: 'native.code',
-    redirectUrl: 'io.identityserver.demo:/oauthredirect',
+    issuer: `${ENVIRONMENT}/auth/realms/${REALM}`,
+    clientId: `${CLIENT}`,
+    redirectUrl: 'reactexample://oauthredirect',
     additionalParameters: {},
     scopes: ['openid', 'profile', 'email', 'offline_access'],
 
-    // serviceConfiguration: {
-    //   authorizationEndpoint: 'https://demo.identityserver.io/connect/authorize',
-    //   tokenEndpoint: 'https://demo.identityserver.io/connect/token',
-    //   revocationEndpoint: 'https://demo.identityserver.io/connect/revoke'
-    // }
-  },
-  auth0: {
-    // From https://openidconnect.net/
-    issuer: 'https://samples.auth0.com',
-    clientId: 'kbyuFDidLLm280LIwVFiazOqjO3ty8KH',
-    redirectUrl: 'https://openidconnect.net/callback',
-    additionalParameters: {},
-    scopes: ['openid', 'profile', 'email', 'phone', 'address'],
+    serviceConfiguration: {
+      authorizationEndpoint: `${ENVIRONMENT}/auth/realms/${REALM}/protocol/openid-connect/auth`,
+      tokenEndpoint: `${ENVIRONMENT}/auth/realms/${REALM}/protocol/openid-connect/token`,
+      userInfoEndpoint: `${ENVIRONMENT}/auth/realms/${REALM}/protocol/openid-connect/userinfo`,
+      revocationEndpoint: `${ENVIRONMENT}/auth/realms/${REALM}/protocol/openid-connect/token`
 
-    // serviceConfiguration: {
-    //   authorizationEndpoint: 'https://samples.auth0.com/authorize',
-    //   tokenEndpoint: 'https://samples.auth0.com/oauth/token',
-    //   revocationEndpoint: 'https://samples.auth0.com/oauth/revoke'
-    // }
-  }
+    }
+  },
+   auth0: {
+     // From https://openidconnect.net/
+     issuer: 'https://samples.auth0.com',
+     clientId: 'kbyuFDidLLm280LIwVFiazOqjO3ty8KH',
+     redirectUrl: 'https://openidconnect.net/callback',
+     additionalParameters: {},
+     scopes: ['openid', 'profile', 'email', 'phone', 'address'],
+
+     // serviceConfiguration: {
+     //   authorizationEndpoint: 'https://samples.auth0.com/authorize',
+     //   tokenEndpoint: 'https://samples.auth0.com/oauth/token',
+     //   revocationEndpoint: 'https://samples.auth0.com/oauth/revoke'
+     // }
+   }
 };
 
-const defaultAuthState = {
+let defaultAuthState = {
   hasLoggedInOnce: false,
   provider: '',
+  idToken: '',
   accessToken: '',
   accessTokenExpirationDate: '',
-  refreshToken: ''
+  refreshToken: '',
+  principal_identifier: '',
+  personas: '',
+  id: ''
 };
 
 export default () => {
+
+  
   const [authState, setAuthState] = useState(defaultAuthState);
+
   React.useEffect(() => {
     prefetchConfiguration({
       warmAndPrefetchChrome: true,
@@ -61,31 +75,41 @@ export default () => {
     });
   }, []);
 
+
   const handleAuthorize = useCallback(
+
     async provider => {
       try {
-        const config = configs[provider];
-        const newAuthState = await authorize(config);
+        let config = configs[provider];
+        var cloneConfig = JSON.parse(JSON.stringify(config));
+        cloneConfig.additionalParameters["login_hint"] = authState.userName ? authState.userName : null
+        config=cloneConfig;
+        var newAuthState = await authorize(cloneConfig);
 
         setAuthState({
           hasLoggedInOnce: true,
           provider: provider,
-          ...newAuthState
+          ...newAuthState,
+          principal_identifier: JSON.parse(JSON.stringify(jwt_decode(newAuthState.idToken))).principal_identifier,
+          personas: JSON.parse(JSON.stringify(jwt_decode(newAuthState.idToken))).personas,
+          id: JSON.parse(JSON.stringify(jwt_decode(newAuthState.idToken))).id
+          
         });
       } catch (error) {
         Alert.alert('Failed to log in', error.message);
       }
     },
     [authState]
-  );
+  
+    );
 
+  
   const handleRefresh = useCallback(async () => {
     try {
-      const config = configs[authState.provider];
-      const newAuthState = await refresh(config, {
+      let config = configs[authState.provider];
+      let newAuthState = await refresh(config, {
         refreshToken: authState.refreshToken
       });
-
       setAuthState(current => ({
         ...current,
         ...newAuthState,
@@ -95,11 +119,14 @@ export default () => {
     } catch (error) {
       Alert.alert('Failed to refresh token', error.message);
     }
+
   }, [authState]);
+
+
 
   const handleRevoke = useCallback(async () => {
     try {
-      const config = configs[authState.provider];
+      let config = configs[authState.provider];
       await revoke(config, {
         tokenToRevoke: authState.accessToken,
         sendClientId: true
@@ -109,7 +136,9 @@ export default () => {
         provider: '',
         accessToken: '',
         accessTokenExpirationDate: '',
-        refreshToken: ''
+        refreshToken: '',
+        userName: '',
+
       });
     } catch (error) {
       Alert.alert('Failed to revoke token', error.message);
@@ -118,44 +147,75 @@ export default () => {
 
   const showRevoke = useMemo(() => {
     if (authState.accessToken) {
-      const config = configs[authState.provider];
+      let config = configs[authState.provider];
       if (config.issuer || config.serviceConfiguration.revocationEndpoint) {
         return true;
       }
     }
     return false;
   }, [authState]);
+  
 
+  
   return (
     <Page>
+    
       {!!authState.accessToken ? (
+    
+    
         <Form>
-          <FormLabel>accessToken</FormLabel>
+          <FormLabel>ID Token</FormLabel>
+          <FormValue >{authState.idToken}</FormValue>
+          <FormLabel>Principal Identifier</FormLabel>
+          <FormValue>{authState.principal_identifier}</FormValue>
+          <FormLabel>Personas</FormLabel>
+          <FormValue>{authState.Personas}</FormValue>
+          <FormLabel>ID</FormLabel>
+          <FormValue>{authState.id}</FormValue>
+          <FormLabel>Access Token</FormLabel>
           <FormValue>{authState.accessToken}</FormValue>
-          <FormLabel>accessTokenExpirationDate</FormLabel>
+          <FormLabel>Access Token Expiration</FormLabel>
           <FormValue>{authState.accessTokenExpirationDate}</FormValue>
-          <FormLabel>refreshToken</FormLabel>
+          <FormLabel>Refresh Token</FormLabel>
           <FormValue>{authState.refreshToken}</FormValue>
-          <FormLabel>scopes</FormLabel>
-          <FormValue>{authState.scopes.join(', ')}</FormValue>
-        </Form>
+
+</Form>
+        
       ) : (
-        <Heading>{authState.hasLoggedInOnce ? 'Goodbye.' : 'Hello, stranger.'}</Heading>
+        <Heading
+        >{authState.hasLoggedInOnce ? 'Goodbye.' : 'Hello, stranger.'}</Heading>
       )}
 
       <ButtonContainer>
+        
         {!authState.accessToken ? (
-          <>
+
+
+<>
+
+<Form>
+<TextInput
+        style={{height: 40, borderColor: 'black', borderWidth: 1, textAlign: "center",marginBottom:-80,marginTop:30}}
+              placeholder="Enter User ID to be used as login_hint"
+                onChangeText={(value) => setAuthState({userName: value})}
+                value={authState.userName}>
+        </TextInput>
+        </Form>
+
             <Button
+
               onPress={() => handleAuthorize('identityserver')}
-              text="Authorize IdentityServer"
-              color="#DA2536"
+            
+              // height= "45"
+              text="Authorize"
+              color="teal"
+              
+              
+            
+              
             />
-            <Button
-              onPress={() => handleAuthorize('auth0')}
-              text="Authorize Auth0"
-              color="#DA2536"
-            />
+        
+
           </>
         ) : null}
         {!!authState.refreshToken ? (

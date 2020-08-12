@@ -94,12 +94,3 @@ target 'Example' do
     flipper_post_install(installer)
   end
 end
-
-target 'Example-tvOS' do
-  # Pods for Example-tvOS
-
-  target 'Example-tvOSTests' do
-    inherit! :search_paths
-    # Pods for testing
-  end
-end
