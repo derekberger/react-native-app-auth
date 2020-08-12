@@ -129,13 +129,14 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example"
+        applicationId 'com.exampleapps.androidreact'
+        project.archivesBaseName = 'demoapp-android-react'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         manifestPlaceholders = [
-          appAuthRedirectScheme: 'io.identityserver.demo'
+          appAuthRedirectScheme: 'reactexample'
         ]
     }
     splits {
