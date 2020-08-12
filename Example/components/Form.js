@@ -5,7 +5,11 @@ const Form = props => <View style={styles.form} {...props} />;
 
 const styles = StyleSheet.create({
   form: {
-    flex: 1
+    flex: 1,
+    marginBottom:70,
+    borderColor:"teal"
+
+
   },
 });
 

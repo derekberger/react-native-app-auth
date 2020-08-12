@@ -9,9 +9,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    alignSelf: 'flex-end',
-    flexDirection: 'row',
+    alignSelf: 'center',
+    flexDirection: 'column',
     margin: 5
+    
   }
 });
 

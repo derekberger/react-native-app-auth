@@ -1,24 +1,42 @@
 import React from 'react';
-import { ImageBackground, StyleSheet, SafeAreaView } from 'react-native';
+import { ImageBackground, StyleSheet, SafeAreaView, ScrollView,View } from 'react-native';
 
 const Page = ({ children }) => (
-  <ImageBackground
-    source={require('../assets/background.jpg')}
-    style={[styles.background, { width: '100%', height: '100%' }]}
-  >
-    <SafeAreaView style={styles.safe}>{children}</SafeAreaView>
-  </ImageBackground>
+  
+    <SafeAreaView style={styles.safe}>
+
+          <ScrollView style={styles.scrollView}>{children}
+          <Separator />
+          </ScrollView>
+    </SafeAreaView>
+);
+const Separator = () => (
+  <View style={styles.separator} />
 );
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
+    scrollView: {
+    paddingRight: 10,
+    backgroundColor: 'white',
+    marginHorizontal: 10,
+    
+  },
   background: {
     flex: 1,
     backgroundColor: 'white',
-    paddingTop: 40,
+    paddingTop: 10,
     paddingHorizontal: 10,
     paddingBottom: 10,
   },
-  safe: {
+  separator: {
+    marginVertical: 8,
+    borderBottomColor: '#737373',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+    safe: {
     flex: 1,
   }
 });
